@@ -28,13 +28,13 @@ jobs:
       trigger: true
   - task: vet
     tags: [containerization]
-    file: ci/pipelines/cf-operator/tasks/vet.yml
+    configuration: (( load "../../common/tasks/vet.yml" ))
   - task: lint
     tags: [containerization]
-    file: ci/pipelines/cf-operator/tasks/lint.yml
+    configuration: (( load "../../common/tasks/lint.yml" ))
   - task: test-unit
     tags: [containerization]
-    file: ci/pipelines/cf-operator/tasks/test.yml
+    configuration: (( load "../../common/tasks/test.yml" ))
   - task: test-integration
     tags: [containerization]
     params:
@@ -42,7 +42,7 @@ jobs:
       ibmcloud_server: ((ibmcloud.server))
       ibmcloud_region: ((ibmcloud.region))
       ibmcloud_cluster: ((ibmcloud.cluster))
-    file: ci/pipelines/cf-operator/tasks/test-integration.yml
+    configuration: (( load "../../common/tasks/test-integration.yml" ))
 
 - name: build
   serial: true
@@ -55,7 +55,7 @@ jobs:
       trigger: true
   - task: build
     tags: [containerization]
-    file: ci/pipelines/cf-operator/tasks/build.yml
+    configuration: (( load "../../common/tasks/build.yml" ))
 
 - name: build-helm
   plan:
@@ -66,4 +66,4 @@ jobs:
       trigger: true
   - task: build
     tags: [containerization]
-    file: ci/pipelines/cf-operator/tasks/build-helm.yml
+    configuration: (( load "../../common/tasks/build-helm.yml" ))

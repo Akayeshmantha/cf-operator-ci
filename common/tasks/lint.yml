@@ -12,4 +12,15 @@ inputs:
 caches:
 - path: pkg/mod # Persist go modules cache
 run:
-  path: ci/pipelines/cf-operator/tasks/test.sh
+  path: /bin/bash
+  args:
+  - -c
+  - |
+    #!/usr/bin/env sh
+    set -ex
+
+    export PATH=$PATH:$PWD/bin
+    export GOPATH=$PWD
+    export GO111MODULE=on
+
+    make -C src/code.cloudfoundry.org/cf-operator lint

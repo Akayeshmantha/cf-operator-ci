@@ -47,7 +47,7 @@ jobs:
   - do:
     - task: vet
       tags: [containerization]
-      file: ci/pipelines/cf-operator/tasks/vet.yml
+      configuration: (( load "../../common/tasks/vet.yml" ))
     on_failure:
       put: status
       params:
@@ -81,7 +81,7 @@ jobs:
   - do:
     - task: lint
       tags: [containerization]
-      file: ci/pipelines/cf-operator/tasks/lint.yml
+      configuration: (( load "../../common/tasks/lint.yml" ))
     on_failure:
       put: status
       params:
@@ -115,7 +115,7 @@ jobs:
   - do:
     - task: test
       tags: [containerization]
-      file: ci/pipelines/cf-operator/tasks/test.yml
+      configuration: (( load "../../common/tasks/test.yml" ))
     - task: test-integration
       tags: [containerization]
       params:
@@ -123,7 +123,7 @@ jobs:
         ibmcloud_server: ((ibmcloud.server))
         ibmcloud_region: ((ibmcloud.region))
         ibmcloud_cluster: ((ibmcloud.cluster))
-      file: ci/pipelines/cf-operator/tasks/test-integration.yml
+      configuration: (( load "../../common/tasks/test-integration.yml" ))
     on_failure:
       put: status
       params:
@@ -157,7 +157,7 @@ jobs:
   - do:
     - task: build
       tags: [containerization]
-      file: ci/pipelines/cf-operator/tasks/build.yml
+      configuration: (( load "../../common/tasks/build.yml" ))
     on_failure:
       put: status
       params:
