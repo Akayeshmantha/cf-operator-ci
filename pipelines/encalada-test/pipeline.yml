@@ -1,0 +1,51 @@
+resources:
+- name: src
+  type: git
+  tags: [containerization]
+  source:
+    uri: https://github.com/qu1queee/cf-operator
+    branch: encalada/test-pr
+- name: ci
+  type: git
+  tags: [containerization]
+  source:
+    uri: ((ci-repo))
+    branch: ((ci-branch))
+- name: docker.cf-operator-ci
+  type: docker-image
+  tags: [containerization]
+  source:
+    repository: ((docker-organization))/((docker-repo))
+    username: ((dockerhub.username))
+    password: ((dockerhub.password))
+
+
+jobs:
+- name: test
+  serial: true
+  plan:
+  - aggregate:
+    - get: ci
+    - get: src
+      trigger: true
+  - task: build
+    tags: [containerization]
+    file: ci/pipelines/tasks/build.yml
+  - put: docker.cf-operator-ci
+    params:
+      build: src
+      tag: docker/tag
+  - do:
+    - task: test-integration
+      tags: [containerization]
+      params:
+        ibmcloud_apikey: ((ibmcloud.key-value))
+        ibmcloud_server: ((ibmcloud.server))
+        ibmcloud_region: ((ibmcloud.region))
+        ibmcloud_cluster: ((ibmcloud.cluster))
+        ssh_server_ip: ((ssh-server.ip))
+        ssh_server_user: ((ssh-server.user))
+        ssh_server_key: ((ssh-server.key))
+        OPERATOR_TEST_STORAGE_CLASS: ((storageclass))
+        DOCKER_IMAGE_REPOSITORY: ((docker-repo))
+      file: ci/pipelines/tasks/test-integration.yml
