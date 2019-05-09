@@ -1,6 +1,6 @@
 pr-repo: cloudfoundry-incubator/cf-operator
 ci-repo: https://github.com/cloudfoundry-incubator/cf-operator-ci
-ci-branch: master
+ci-branch: custom_ci_eeeo
 docker-organization: cfcontainerization
 docker-repo: cf-operator-ci
 storageclass: hostpath-containerization
