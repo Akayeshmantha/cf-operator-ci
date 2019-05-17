@@ -1,0 +1,38 @@
+resources:
+- name: src
+  type: git
+  tags: [containerization]
+  source:
+    uri: ((src-repo))
+    branch: master
+- name: ci
+  type: git
+  tags: [containerization]
+  source:
+    uri: ((ci-repo))
+    branch: ((ci-branch))
+
+- name: e2e-locks
+  type: pool
+  source:
+    uri: git@github.com:qu1queee/lock-it.git
+    branch: master
+    pool: e2e
+    private_key: ((lock.key))
+
+
+jobs:
+- name: build
+  serial: true
+  plan:
+  - aggregate:
+    - get: ci
+    - get: src
+    - put: e2e-locks
+      params: {acquire: true}
+  - aggregate:
+    - task: build
+      tags: [containerization]
+      file: ci/pipelines/tasks/task-b.yml
+  - put:  e2e-locks
+    params: {release: e2e-locks}

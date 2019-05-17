@@ -1,0 +1,3 @@
+src-repo: https://github.com/cloudfoundry-incubator/cf-operator
+ci-repo: https://github.com/cloudfoundry-incubator/cf-operator-ci
+ci-branch: qu1queee/test-locks
