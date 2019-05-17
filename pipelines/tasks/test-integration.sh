@@ -62,7 +62,7 @@ export CF_OPERATOR_WEBHOOK_SERVICE_HOST="$ssh_server_ip"
 
 
 echo "Running integration tests"
-make -C src/code.cloudfoundry.org/cf-operator test-integration
+#make -C src/code.cloudfoundry.org/cf-operator test-integration
 
 echo "Running e2e tests"
 # fix SSL path
