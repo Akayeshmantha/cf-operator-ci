@@ -4,7 +4,7 @@ resources:
   tags: [containerization]
   source:
     uri: https://github.com/cloudfoundry-incubator/cf-operator
-    branch: qu1queee/165787126
+    branch: master
 - name: ci
   type: git
   tags: [containerization]

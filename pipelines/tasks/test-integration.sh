@@ -15,8 +15,14 @@ cleanup () {
   echo "Cleaning up"
   kubectl delete ns --wait=false --grace-period=60 "${TEST_NAMESPACE}"
   pidof ssh | xargs kill
+  pidof havener | xargs kill
+  cat /tmp/logs-events
 }
 trap cleanup EXIT
+
+echo "Installing havener"
+curl -sL https://raw.githubusercontent.com/homeport/havener/master/scripts/download-latest.sh | bash
+havener version
 
 echo "Seting up bluemix access"
 ibmcloud login -a "$ibmcloud_server" --apikey "$ibmcloud_apikey"
@@ -52,6 +58,8 @@ export CF_OPERATOR_WEBHOOK_SERVICE_HOST="$ssh_server_ip"
 
 
 echo "Running e2e tests with helm"
+
+havener events > /tmp/logs-events &
 # fix SSL path
 kube_path=$(dirname "$KUBECONFIG")
 sed -i 's@certificate-authority: \(.*\)$@certificate-authority: '$kube_path'/\1@' $KUBECONFIG
