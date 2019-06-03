@@ -12,4 +12,4 @@ inputs:
 caches:
 - path: pkg/mod # Persist go modules cache
 run:
-  path: ci/pipelines/tasks/test-integration.sh
+  path: ci/pipelines/tasks/test-helm-e2e.sh

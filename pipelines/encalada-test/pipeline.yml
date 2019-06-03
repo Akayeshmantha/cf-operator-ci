@@ -21,7 +21,7 @@ resources:
 
 
 jobs:
-- name: test
+- name: e2e-test
   serial: true
   plan:
   - aggregate:
@@ -36,7 +36,7 @@ jobs:
       build: src
       tag: docker/tag
   - do:
-    - task: test-integration
+    - task: test-e2e
       tags: [containerization]
       params:
         ibmcloud_apikey: ((ibmcloud.key-value))
@@ -49,4 +49,4 @@ jobs:
         ssh_server_key: ((ssh-server.key))
         OPERATOR_TEST_STORAGE_CLASS: ((storageclass))
         DOCKER_IMAGE_REPOSITORY: ((docker-repo))
-      file: ci/pipelines/tasks/test-integration.yml
+      file: ci/pipelines/tasks/test-helm-e2e.yml
