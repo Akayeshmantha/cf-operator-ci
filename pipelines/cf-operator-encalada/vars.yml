@@ -1,0 +1,7 @@
+src-repo: https://github.com/cloudfoundry-incubator/cf-operator
+src-branch: encalada-0705
+ci-repo: https://github.com/cloudfoundry-incubator/cf-operator-ci.git
+ci-branch: encalada-0705
+docker-organization: cfcontainerization
+docker-candidate-repo: cf-operator-candidate
+storageclass: hostpath-containerization

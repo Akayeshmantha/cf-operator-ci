@@ -1,0 +1,131 @@
+resources:
+- name: src
+  type: git
+  source:
+    uri: ((src-repo))
+    branch: ((src-branch))
+- name: ci
+  type: git
+  source:
+    uri: ((ci-repo))
+    branch: ((ci-branch))
+- name: docker.cf-operator-rc
+  type: docker-image
+  source:
+    repository: ((docker-organization))/((docker-candidate-repo))
+    username: ((dockerhub.username))
+    password: ((dockerhub.password))
+- name: s3.build-number
+  type: semver
+  source:
+    driver: s3
+    access_key_id: ((s3.accessKey))
+    secret_access_key: ((s3.secretKey))
+    bucket: ((s3.bucketName))
+    key: code-coverage/version
+    initial_version: 0.0.0
+- name: s3.code-coverage-unit
+  type: s3
+  source:
+    access_key_id: ((s3.accessKey))
+    secret_access_key: ((s3.secretKey))
+    bucket: ((s3.bucketName))
+    regexp: code-coverage/gover-(.*)-unit.coverprofile
+- name: s3.code-coverage-integration
+  type: s3
+  source:
+    access_key_id: ((s3.accessKey))
+    secret_access_key: ((s3.secretKey))
+    bucket: ((s3.bucketName))
+    regexp: code-coverage/gover-(.*)-integration.coverprofile
+- name: s3.env-dump
+  type: s3
+  source:
+    access_key_id: ((s3.accessKey))
+    secret_access_key: ((s3.secretKey))
+    bucket: ((s3.bucketName))
+    regexp: env_dumps/env_dump-(.*).tar.gz
+
+
+jobs:
+- name: test
+  serial: true
+  plan:
+  - aggregate:
+    - get: ci
+    - get: src
+      trigger: true
+  - put: s3.build-number
+    params:
+      bump: patch
+  - aggregate:
+    - task: vet
+      file: ci/pipelines/tasks/vet.yml
+    - task: lint
+      file: ci/pipelines/tasks/lint.yml
+    - task: test-unit
+      file: ci/pipelines/tasks/test.yml
+      params:
+        COVERAGE: true
+  - put: s3.code-coverage-unit
+    params:
+      file: code-coverage/gover-*-unit.coverprofile
+
+- name: build
+  serial: true
+  plan:
+  - aggregate:
+    - get: ci
+    - get: src
+      passed: [test]
+      trigger: true
+    - get: s3.build-number
+      passed: [test]
+    - get: s3.code-coverage-unit
+      passed: [test]
+  - task: build
+    file: ci/pipelines/tasks/build.yml
+  - do:
+    - put: docker.cf-operator-rc
+      params:
+        build: src
+        build_args:
+          GO111MODULE: 'off'
+        tag: docker/tag
+
+- name: test-integration
+  serial: true
+  plan:
+  - aggregate:
+    - get: ci
+    - get: src
+      trigger: true
+      passed: [build]
+    - get: s3.build-number
+      passed: [build]
+    - get: s3.code-coverage-unit
+      passed: [build]
+  - do:
+    - aggregate:
+      - task: test-integration
+        params:
+          ibmcloud_apikey: ((ibmcloud.key-value))
+          ibmcloud_server: ((ibmcloud.server))
+          ibmcloud_region: ((ibmcloud.region))
+          ibmcloud_cluster: ((ibmcloud.cluster-dino))
+          ssh_server_ip: ((ssh-server.ip))
+          ssh_server_user: ((ssh-server.user))
+          ssh_server_key: ((ssh-server.key))
+          OPERATOR_TEST_STORAGE_CLASS: ((storageclass))
+          DOCKER_IMAGE_REPOSITORY: ((docker-candidate-repo))
+          COVERAGE: true
+        file: ci/pipelines/tasks/test-integration.yml
+        on_failure:
+          do:
+          - put: s3.env-dump
+            params:
+              file: env_dumps/env_dump-*.tar.gz
+              acl: public-read
+  - put: s3.code-coverage-integration
+    params:
+      file: code-coverage/gover-*-integration.coverprofile
