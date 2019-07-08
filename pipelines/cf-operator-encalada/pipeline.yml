@@ -107,7 +107,7 @@ jobs:
       passed: [build]
   - do:
     - aggregate:
-      - task: test-integration
+      - task: test-helm-e2e
         params:
           ibmcloud_apikey: ((ibmcloud.key-value))
           ibmcloud_server: ((ibmcloud.server))
@@ -119,7 +119,7 @@ jobs:
           OPERATOR_TEST_STORAGE_CLASS: ((storageclass))
           DOCKER_IMAGE_REPOSITORY: ((docker-candidate-repo))
           COVERAGE: true
-        file: ci/pipelines/tasks/test-integration.yml
+        file: ci/pipelines/tasks/test-helm-e2e.yml
         on_failure:
           do:
           - put: s3.env-dump
