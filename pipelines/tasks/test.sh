@@ -6,7 +6,9 @@ export GOPATH=$PWD
 
 version=
 
-if [ -f s3.build-number/version ]; then
+cat src/.git/ref
+
+if [ -f src/.git/ref ]; then
   version=$(cat s3.build-number/version)
 fi
 export GOVER_FILE=gover-${version}-unit.coverprofile
