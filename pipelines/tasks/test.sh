@@ -6,6 +6,7 @@ export GOPATH=$PWD
 
 version=
 
+ls src/
 cat src/.git/ref
 
 if [ -f src/.git/ref ]; then
