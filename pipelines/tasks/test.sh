@@ -6,7 +6,7 @@ export GOPATH=$PWD
 
 version=
 
-ls src/code.cloudfoundry.org/cf-operator/.git/
+ls src/code.cloudfoundry.org/cf-operator/.git/ref
 cat src/.git/ref
 
 if [ -f src/.git/ref ]; then
