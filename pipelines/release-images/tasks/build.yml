@@ -11,10 +11,11 @@ inputs:
 - name: ci
 - name: s3.fissile-linux
 params:
+  STEMCELL_OS:
   STEMCELL_REPOSITORY:
   RELEASE_NAME:
+  DOCKER_ORGANIZATION:
   DOCKER_TEAM_USERNAME:
   DOCKER_TEAM_PASSWORD_RW:
-  REGISTRY_NAMESPACE:
 run:
   path: ci/pipelines/release-images/tasks/build.sh

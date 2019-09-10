@@ -1,15 +1,7 @@
 <%
-cloudfoundry_releases = %w(binary-buildpack dotnet-core-buildpack go-buildpack java-buildpack nodejs-buildpack php-buildpack python-buildpack ruby-buildpack staticfile-buildpack cf-mysql capi cf-networking cf-smoke-tests cf-syslog-drain cflinuxfs2 cflinuxfs3 diego garden-runc loggregator nats statsd-injector uaa loggregator-agent log-cache bosh-dns-aliases syslog)
-incubator_releases = %w(bpm cf-routing pxc bits-service)
-bosh_packages_releases = %w(cf-cli)
-pivotal_cf_releases = %w(credhub)
-community_releases = %w(eirini-bosh)
+buildpacks_releases = %w(binary-buildpack dotnet-core-buildpack go-buildpack java-buildpack nodejs-buildpack php-buildpack python-buildpack ruby-buildpack staticfile-buildpack)
 
-releases = cloudfoundry_releases.map { |r| { organization: "cloudfoundry", name: r } }
-releases += incubator_releases.map { |r| { organization: "cloudfoundry-incubator", name: r } }
-releases += community_releases.map { |r| { organization: "cloudfoundry-community", name: r } }
-releases += bosh_packages_releases.map { |r| { organization: "bosh-packages", name: r } }
-releases += pivotal_cf_releases.map { |r| { organization: "pivotal-cf", name: r } }
+releases = buildpacks_releases.map { |r| { organization: "cloudfoundry", name: r } }
 %>
 # Some releases aren't available from bosh.io but only from s3
 <% s3_releases = [{ name: 'groot-btrfs', bucket: 'suse-final-releases' }] %>
@@ -36,17 +28,18 @@ resources:
 - name: s3.fissile-linux
   type: s3
   source:
-    bucket: ((s3-bucket))
+    bucket: ((fissile-linux-s3-bucket))
     private: true
     regexp: fissile/develop/fissile-(.*)\.tgz
 
-- name: s3.fissile-stemcell-opensuse-version
+- name: s3.fissile-stemcell-version
   type: s3
   source:
-    bucket: ((versions-s3-bucket))
+    bucket: ((stemcell-versions-s3-bucket))
+    region_name: ((stemcell-s3-bucket-region))
     access_key_id: ((s3.accessKey))
     secret_access_key: ((s3.secretKey))
-    versioned_file: fissile-stemcell-versions/fissile-stemcell-opensuse-version
+    versioned_file: ((stemcell-version-file))
 
 jobs:
 <% (releases + s3_releases).each do |release| %>
@@ -55,7 +48,7 @@ jobs:
   - aggregate:
     - get: ci
   - aggregate:
-    - get: s3.fissile-stemcell-opensuse-version
+    - get: s3.fissile-stemcell-version
       trigger: true
     - get: <%= release[:name] %>-release
       trigger: true
@@ -68,12 +61,15 @@ jobs:
       privileged: true
       input_mapping:
         release: <%= release[:name] %>-release
-        s3.stemcell-version: s3.fissile-stemcell-opensuse-version
+        s3.stemcell-version: s3.fissile-stemcell-version
       params:
-        STEMCELL_REPOSITORY: splatform/fissile-stemcell-opensuse
+        STEMCELL_OS: ((stemcell-os))
+        STEMCELL_REPOSITORY: ((stemcell-repository))
+        STEMCELL_VERSIONED_FILE: ((stemcell-version-file))
         RELEASE_NAME: <%= release[:name] %>
+        DOCKER_REGISTRY: ((docker-registry))
+        DOCKER_ORGANIZATION: ((docker-organization))
         DOCKER_TEAM_USERNAME: ((dockerhub.username))
         DOCKER_TEAM_PASSWORD_RW: ((dockerhub.password))
-        REGISTRY_NAMESPACE: "cfcontainerization"
       file: ci/pipelines/release-images/tasks/build.yml
 <% end %>
