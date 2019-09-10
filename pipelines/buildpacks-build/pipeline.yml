@@ -44,13 +44,9 @@ jobs:
   - in_parallel:
     - get: ci
     - get: docker-image-resource
-  - in_parallel:
+    - get:  <%= buildpack[:name] %>-release
     - get: s3.fissile-stemcell-version
       trigger: true
-    - get: <%= buildpack[:name] %>-buildpack
-      trigger: true
-      params:
-        tarball: false
     - get: s3.fissile-linux
       trigger: true
   - do:
@@ -63,7 +59,7 @@ jobs:
         STEMCELL_OS: ((stemcell-os))
         STEMCELL_REPOSITORY: ((stemcell-repository))
         STEMCELL_VERSIONED_FILE: ((stemcell-version-file))
-        BUILDPACK_NAME: <%= buildpack[:name] %>
+        BUILDPACK_RELEASE: <%= buildpack[:name] %>
         DOCKER_REGISTRY: ((docker-registry))
         DOCKER_ORGANIZATION: ((docker-organization))
         DOCKER_TEAM_USERNAME: ((dockerhub.username))
