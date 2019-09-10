@@ -3,8 +3,6 @@ buildpacks_releases = %w(binary-buildpack dotnet-core-buildpack go-buildpack jav
 
 releases = buildpacks_releases.map { |r| { organization: "cloudfoundry", name: r } }
 %>
-# Some releases aren't available from bosh.io but only from s3
-<% s3_releases = [{ name: 'groot-btrfs', bucket: 'suse-final-releases' }] %>
 
 resources:
 - name: ci
