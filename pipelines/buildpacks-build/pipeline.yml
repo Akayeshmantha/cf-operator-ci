@@ -10,6 +10,11 @@ resources:
   source:
     uri: ((ci-repo))
     branch: ((ci-branch))
+- name: docker-image-resource
+  type: git
+  source:
+    uri: ((docker-image-resource-repo))
+    branch: ((docker-image-resource-branch))
 <% buildpacks.each do |buildpack| %>
 - name: <%= buildpack[:name] %>-buildpack
   type: bosh-io-release
