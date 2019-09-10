@@ -45,9 +45,9 @@ jobs:
 <% (releases + s3_releases).each do |release| %>
 - name: build-<%= release[:name] %>
   plan:
-  - aggregate:
+  - in_parallel:
     - get: ci
-  - aggregate:
+  - in_parallel:
     - get: s3.fissile-stemcell-version
       trigger: true
     - get: <%= release[:name] %>-release
