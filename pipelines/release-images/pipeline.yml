@@ -33,7 +33,7 @@ resources:
     versioned_file: ((stemcell-version-file))
 
 jobs:
-<% (releases + s3_releases).each do |release| %>
+<% (releases).each do |release| %>
 - name: build-<%= release[:name] %>
   plan:
   - in_parallel:
