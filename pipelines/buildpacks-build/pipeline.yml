@@ -63,5 +63,5 @@ jobs:
         DOCKER_ORGANIZATION: ((docker-organization))
         DOCKER_TEAM_USERNAME: ((dockerhub.username))
         DOCKER_TEAM_PASSWORD_RW: ((dockerhub.password))
-      file: ci/pipelines/release-images/tasks/build.yml
+      file: ci/pipelines/buildpacks-build/tasks/build.yml
 <% end %>

@@ -19,4 +19,4 @@ params:
   DOCKER_TEAM_USERNAME:
   DOCKER_TEAM_PASSWORD_RW:
 run:
-  path: ci/pipelines/release-images/tasks/build.sh
+  path: ci/pipelines/buildpacks-build/tasks/build.sh
