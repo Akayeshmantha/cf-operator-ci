@@ -1,7 +1,7 @@
 <%
 buildpacks_releases = %w(binary-buildpack dotnet-core-buildpack go-buildpack java-buildpack nodejs-buildpack php-buildpack python-buildpack ruby-buildpack staticfile-buildpack)
 
-releases = buildpacks_releases.map { |r| { organization: "cloudfoundry", name: r } }
+buildpacks = buildpacks_releases.map { |r| { organization: "cloudfoundry", name: r } }
 %>
 
 resources:
@@ -10,11 +10,11 @@ resources:
   source:
     uri: ((ci-repo))
     branch: ((ci-branch))
-<% releases.each do |release| %>
-- name: <%= release[:name] %>-release
+<% buildpacks.each do |buildpack| %>
+- name: <%= buildpack[:name] %>-buildpack
   type: bosh-io-release
   source:
-    repository: <%= release[:organization] %>/<%= release[:name] %>-release
+    repository: <%= buildpack[:organization] %>/<%= buildpack[:name] %>-release
 <% end %>
 - name: s3.fissile-linux
   type: s3
@@ -33,15 +33,16 @@ resources:
     versioned_file: ((stemcell-version-file))
 
 jobs:
-<% (releases).each do |release| %>
-- name: build-<%= release[:name] %>
+<% (buildpacks).each do |buildpack| %>
+- name: build-<%= buildpack[:name] %>
   plan:
   - in_parallel:
     - get: ci
+    - get: docker-image-resource
   - in_parallel:
     - get: s3.fissile-stemcell-version
       trigger: true
-    - get: <%= release[:name] %>-release
+    - get: <%= buildpack[:name] %>-buildpack
       trigger: true
       params:
         tarball: false
@@ -51,13 +52,13 @@ jobs:
     - task: build
       privileged: true
       input_mapping:
-        release: <%= release[:name] %>-release
+        buildpack: <%= buildpack[:name] %>-release
         s3.stemcell-version: s3.fissile-stemcell-version
       params:
         STEMCELL_OS: ((stemcell-os))
         STEMCELL_REPOSITORY: ((stemcell-repository))
         STEMCELL_VERSIONED_FILE: ((stemcell-version-file))
-        RELEASE_NAME: <%= release[:name] %>
+        BUILDPACK_NAME: <%= buildpack[:name] %>
         DOCKER_REGISTRY: ((docker-registry))
         DOCKER_ORGANIZATION: ((docker-organization))
         DOCKER_TEAM_USERNAME: ((dockerhub.username))
