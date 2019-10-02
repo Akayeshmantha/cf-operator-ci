@@ -93,7 +93,7 @@ done
 
 echo "--------------------------------------------------------------------------------"
 echo "Running integration tests"
-make -C src/code.cloudfoundry.org/cf-operator test-integration
+#make -C src/code.cloudfoundry.org/cf-operator test-integration
 
 echo "--------------------------------------------------------------------------------"
 echo "Running integration storage tests"
