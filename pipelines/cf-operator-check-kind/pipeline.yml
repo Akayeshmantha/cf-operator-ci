@@ -1,0 +1,59 @@
+resources:
+- name: src
+  type: git
+  source:
+    uri: ((src-repo))
+    branch: master
+- name: ci
+  type: git
+  source:
+    uri: ((ci-repo))
+    branch: "rohit/kind"
+- name: s3.build-number
+  type: semver
+  source:
+    driver: s3
+    access_key_id: ((s3.accessKey))
+    secret_access_key: ((s3.secretKey))
+    bucket: ((s3.bucketName))
+    key: code-coverage/version
+    initial_version: 0.0.0
+
+jobs:
+- name: test-integration
+  serial: true
+  plan:
+  - in_parallel:
+    - get: ci
+    - get: src
+      trigger: true
+    - get: s3.build-number
+    - do:
+      - in_parallel:
+        - task: test-integration
+          params:
+            ibmcloud_apikey: ((ibmcloud.key-value))
+            ibmcloud_server: ((ibmcloud.server))
+            ibmcloud_region: ((ibmcloud.region))
+            ibmcloud_cluster: ((ibmcloud.cluster-dino))
+            ssh_server_ip: ((ssh-server.ip))
+            ssh_server_user: ((ssh-server.user))
+            ssh_server_key: ((ssh-server.key))
+            OPERATOR_TEST_STORAGE_CLASS: ((storageclass))
+            DOCKER_IMAGE_REPOSITORY: ((docker-candidate-repo))
+            COVERAGE: true
+            GOPROXY: ((goproxy))
+          file: ci/pipelines/tasks-kind/test-integration.yml
+        - task: test-helm-e2e
+          params:
+            ibmcloud_apikey: ((ibmcloud.key-value))
+            ibmcloud_server: ((ibmcloud.server))
+            ibmcloud_region: ((ibmcloud.region))
+            ibmcloud_cluster: ((ibmcloud.cluster-dino))
+            ssh_server_ip: ((ssh-server.ip))
+            ssh_server_user: ((ssh-server.user))
+            ssh_server_key: ((ssh-server.key))
+            OPERATOR_TEST_STORAGE_CLASS: ((storageclass))
+            DOCKER_IMAGE_REPOSITORY: ((docker-candidate-repo))
+            GOPROXY: ((goproxy))
+          file: ci/pipelines/tasks-kind/test-helm-e2e.yml

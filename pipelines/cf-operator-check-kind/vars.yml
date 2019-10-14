@@ -1,0 +1,7 @@
+pr-repo: cloudfoundry-incubator/cf-operator
+ci-repo: https://github.com/cloudfoundry-incubator/cf-operator-ci.git
+ci-branch: rohit/kind
+src-repo: https://github.com/cloudfoundry-incubator/cf-operator.git
+docker-organization: cfcontainerization
+docker-candidate-repo: cf-operator-ci
+storageclass: hostpath-containerization
