@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
-set -eu
+
+apt-get install curl -y
 
 # Download and install kubectl
 curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && mv kubectl /usr/local/bin/
@@ -11,6 +12,9 @@ GO111MODULE=on go get sigs.k8s.io/kind
 # This is useful in cases when Go toolchain isn't available or you prefer running stable version
 # Binaries for KinD are available on GitHub Releases: https://github.com/kubernetes-sigs/kind/releases
 # - curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/0.0.1/kind-linux-amd64 && chmod +x kind && sudo mv kind /usr/local/bin/
+
+docker version
+docker run hello-world
 
 # Create a new Kubernetes cluster using KinD
 kind create cluster

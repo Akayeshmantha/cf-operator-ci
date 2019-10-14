@@ -1,4 +1,4 @@
-FROM cfcontainerization/base-ci:latest
+FROM rohitsakala/base-ci:latest
 
 ADD https://github.com/SUSE/kctl/releases/download/v0.0.12/kctl-linux-amd64 /usr/bin/k
 RUN chmod +x /usr/bin/k
