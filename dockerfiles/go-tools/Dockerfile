@@ -16,21 +16,14 @@ RUN go get github.com/onsi/gomega/...
 RUN go get github.com/rohitsakala/goveralls
 RUN go get github.com/modocache/gover
 RUN go get honnef.co/go/tools/cmd/staticcheck && cd $GOPATH/src/honnef.co/go/tools/cmd/staticcheck && git checkout 2019.2.2 && go get && go install
-
-RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl; mv kubectl /usr/local/bin; chmod +x /usr/local/bin/kubectl
-
-RUN curl -sL https://raw.githubusercontent.com/homeport/havener/master/scripts/download-latest.sh | bash
-
-RUN curl -fsL https://clis.ng.bluemix.net/install/linux | sh && \
-    bx plugin install container-service -r Bluemix && \
-    bx plugin install container-registry -r Bluemix && \
-    bx config --usage-stats-collect false && \
-    bx config --check-version false
-
 RUN gem install bosh-template
-
 ENV HELM_VERSION="v2.13.1"
 ENV HELM_URL https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}-linux-amd64.tar.gz
 RUN curl --progress-bar --location ${HELM_URL} | tar -xzf - -C /tmp linux-amd64/helm && \
     mv /tmp/linux-amd64/helm /usr/bin/helm && \
     rm -rf /tmp/linux-amd64/
+
+
+RUN curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.5.1/kind-$(uname)-amd64
+RUN chmod +x ./kind
+RUN mv ./kind /usr/local/bin/kind

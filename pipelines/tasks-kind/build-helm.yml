@@ -1,0 +1,16 @@
+---
+platform: linux
+image_resource:
+ type: docker-image
+ # we could use a smaller image
+ source:
+   repository: rohitsakala/go-tools
+   tag: kind
+inputs:
+- name: src
+  path: src/code.cloudfoundry.org/cf-operator
+- name: ci
+outputs:
+- name: helm-charts
+run:
+  path: ci/pipelines/tasks/build-helm.sh
