@@ -1,5 +1,9 @@
 #!/usr/bin/env sh
-set -eu
+
+exec 3> `basename "$0"`.trace
+BASH_XTRACEFD=3
+
+set -eux
 
 : "${ibmcloud_apikey:?}"
 : "${ibmcloud_server:?}"
@@ -15,6 +19,12 @@ export PATH=$PATH:$PWD/bin
 export GOPATH=$PWD
 export GO111MODULE=on
 export TEST_NAMESPACE="test$(date +%s)"
+
+curl -X DELETE http://18.216.74.180:8030/kind
+curl -d "name=kind" -X POST http://18.216.74.180:8030/new
+mkdir -p $HOME/.kube
+touch $HOME/.kube/config
+curl  http://18.216.74.180:8030/kubeconfig/kind -o $HOME/.kube/config
 
 # Random port to support parallelism with different webhook servers
 export CF_OPERATOR_WEBHOOK_SERVICE_PORT=$(( ( RANDOM % 2000 )  + 2000 ))

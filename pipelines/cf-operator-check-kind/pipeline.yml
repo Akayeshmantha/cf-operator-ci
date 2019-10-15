@@ -1,59 +1,86 @@
+resource_types:
+- name: pull-request
+  type: docker-image
+  source:
+    repository: teliaoss/github-pr-resource
+- name: status
+  type: docker-image
+  source:
+    repository: resource/github-status
+    tag: release
+
 resources:
 - name: src
-  type: git
+  type: pull-request
+  webhook_token: ((github.webhook-token))
   source:
-    uri: ((src-repo))
-    branch: master
+    repository: ((pr-repo))
+    access_token: ((github.access-token))
+- name: status
+  type: status
+  source:
+    access_token: ((github.access-token))
+    repo: ((pr-repo))
 - name: ci
   type: git
   source:
     uri: ((ci-repo))
     branch: "rohit/kind"
-- name: s3.build-number
-  type: semver
+- name: s3.env-dump
+  type: s3
   source:
-    driver: s3
     access_key_id: ((s3.accessKey))
     secret_access_key: ((s3.secretKey))
     bucket: ((s3.bucketName))
-    key: code-coverage/version
-    initial_version: 0.0.0
+    regexp: env_dumps/env_dump-(.*).tar.gz
+
 
 jobs:
-- name: test-integration
+- name: test
   serial: true
   plan:
-  - in_parallel:
+  - aggregate:
     - get: ci
     - get: src
       trigger: true
-    - get: s3.build-number
   - do:
-    - in_parallel:
-      - task: test-integration
+    - task: test-integration
+      params:
+        ssh_server_ip: ((ssh-server.ip))
+        ssh_server_user: ((ssh-server.user))
+        ssh_server_key: ((ssh-server.key))
+        OPERATOR_TEST_STORAGE_CLASS: ((storageclass))
+        DOCKER_IMAGE_REPOSITORY: ((docker-repo))
+        DOCKER_IMAGE_TAG: "v0.0.0-0.gcd0b725b"
+        GOPROXY: ((goproxy))
+        NODES: 6
+      file: ci/pipelines/tasks-kind/test-integration.yml
+    - task: test-helm-e2e
+      params:
+        ssh_server_ip: ((ssh-server.ip))
+        ssh_server_user: ((ssh-server.user))
+        ssh_server_key: ((ssh-server.key))
+        DOCKER_IMAGE_REPOSITORY: ((docker-repo))
+        OPERATOR_TEST_STORAGE_CLASS: ((storageclass))
+        DOCKER_IMAGE_TAG: "v0.0.0-0.gcd0b725b"
+        GOPROXY: ((goproxy))
+      file: ci/pipelines/tasks-kind/test-helm-e2e.yml
+    on_failure:
+      in_parallel:
+      - put: s3.env-dump
         params:
-          ibmcloud_apikey: ((ibmcloud.key-value))
-          ibmcloud_server: ((ibmcloud.server))
-          ibmcloud_region: ((ibmcloud.region))
-          ibmcloud_cluster: ((ibmcloud.cluster-dino))
-          ssh_server_ip: ((ssh-server.ip))
-          ssh_server_user: ((ssh-server.user))
-          ssh_server_key: ((ssh-server.key))
-          OPERATOR_TEST_STORAGE_CLASS: ((storageclass))
-          DOCKER_IMAGE_REPOSITORY: ((docker-candidate-repo))
-          COVERAGE: true
-          GOPROXY: ((goproxy))
-        file: ci/pipelines/tasks-kind/test-integration.yml
-      - task: test-helm-e2e
+          file: env_dumps/env_dump-*.tar.gz
+          acl: public-read
+      - put: status
         params:
-          ibmcloud_apikey: ((ibmcloud.key-value))
-          ibmcloud_server: ((ibmcloud.server))
-          ibmcloud_region: ((ibmcloud.region))
-          ibmcloud_cluster: ((ibmcloud.cluster-dino))
-          ssh_server_ip: ((ssh-server.ip))
-          ssh_server_user: ((ssh-server.user))
-          ssh_server_key: ((ssh-server.key))
-          OPERATOR_TEST_STORAGE_CLASS: ((storageclass))
-          DOCKER_IMAGE_REPOSITORY: ((docker-candidate-repo))
-          GOPROXY: ((goproxy))
-        file: ci/pipelines/tasks-kind/test-helm-e2e.yml
+          context: test
+          description: go test check
+          path: src
+          state: failure
+    on_success:
+      put: status
+      params:
+        context: test
+        description: go test check
+        path: src
+        state: success

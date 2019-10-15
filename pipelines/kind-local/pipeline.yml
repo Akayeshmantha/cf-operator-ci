@@ -1,0 +1,32 @@
+jobs:
+- name: kind
+  plan:
+  - in_parallel:
+    - get: kind-on-c
+    - get: kind-release
+      params:
+        globs:
+        - kind-linux-amd64
+  - task: run-kind
+    privileged: true
+    file: kind-on-c/kind.yaml
+    params:
+      KIND_LOG_LEVEL: debug
+      KIND_TESTS: |
+        # your actual tests go here!
+        git clone https://github.com/cloudfoundry-incubator/cf-operator.git
+        cd cf-operator
+        make test-integration
+        kubectl get nodes -o wide
+
+resources:
+- name: kind-release
+  type: github-release
+  source:
+    owner: kubernetes-sigs
+    repository: kind
+    pre_release: true
+- name: kind-on-c
+  type: git
+  source:
+    uri: https://github.com/pivotal-k8s/kind-on-c

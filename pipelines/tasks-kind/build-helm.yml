@@ -4,8 +4,8 @@ image_resource:
  type: docker-image
  # we could use a smaller image
  source:
-   repository: rohitsakala/go-tools
-   tag: kind
+   repository: cfcontainerization/go-tools
+   tag: latest
 inputs:
 - name: src
   path: src/code.cloudfoundry.org/cf-operator
@@ -13,4 +13,4 @@ inputs:
 outputs:
 - name: helm-charts
 run:
-  path: ci/pipelines/tasks/build-helm.sh
+  path: ci/pipelines/tasks-kind/build-helm.sh

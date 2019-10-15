@@ -1,10 +1,11 @@
 #!/usr/bin/env sh
 set -eu
 
-: "${ibmcloud_apikey:?}"
-: "${ibmcloud_server:?}"
-: "${ibmcloud_region:?}"
-: "${ibmcloud_cluster:?}"
+exec 3> `basename "$0"`.trace
+BASH_XTRACEFD=3
+
+set -eux
+
 : "${ssh_server_ip:?}"
 : "${ssh_server_user:?}"
 : "${ssh_server_key:?}"
@@ -15,6 +16,12 @@ export PATH=$PATH:$PWD/bin
 export GOPATH=$PWD
 export GO111MODULE=on
 export TEST_NAMESPACE="test$(date +%s)"
+
+curl -X DELETE http://149.44.172.129:8030/kind
+curl -d "name=kind" -X POST http://149.44.172.129:8030/new
+mkdir -p $HOME/.kube
+touch $HOME/.kube/config
+curl  http://149.44.172.129:8030/kubeconfig/kind -o $HOME/.kube/config
 
 ## File used for coverage reporting
 version=
@@ -47,13 +54,6 @@ cleanup () {
 }
 
 trap cleanup EXIT
-
-echo "Setting up bluemix access"
-ibmcloud login -a "$ibmcloud_server" --apikey "$ibmcloud_apikey"
-ibmcloud cs  region-set "$ibmcloud_region"
-export BLUEMIX_CS_TIMEOUT=500
-eval $(ibmcloud cs cluster-config "$ibmcloud_cluster" --export)
-echo "Running integration tests in the ${ibmcloud_cluster} cluster."
 
 ## Set up SSH tunnels to make our webhook server available to k8s
 echo "Setting up SSH tunnel for webhook"

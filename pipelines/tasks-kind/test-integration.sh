@@ -1,43 +1,82 @@
 #!/usr/bin/env sh
+set -eu
 
-apt-get install curl -y
+exec 3> `basename "$0"`.trace
+BASH_XTRACEFD=3
 
-# Download and install kubectl
-curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && mv kubectl /usr/local/bin/
+set -eux
 
-# Download and install KinD
-GO111MODULE=on go get sigs.k8s.io/kind
+: "${ssh_server_ip:?}"
+: "${ssh_server_user:?}"
+: "${ssh_server_key:?}"
+: "${OPERATOR_TEST_STORAGE_CLASS:?}"
+: "${DOCKER_IMAGE_REPOSITORY:?}"
 
-# It's possible to download and install KinD using curl, similar as for kubectl
-# This is useful in cases when Go toolchain isn't available or you prefer running stable version
-# Binaries for KinD are available on GitHub Releases: https://github.com/kubernetes-sigs/kind/releases
-# - curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/0.0.1/kind-linux-amd64 && chmod +x kind && sudo mv kind /usr/local/bin/
+export PATH=$PATH:$PWD/bin
+export GOPATH=$PWD
+export GO111MODULE=on
+export TEST_NAMESPACE="test$(date +%s)"
 
-docker version
-docker run hello-world
+curl -X DELETE http://18.216.74.180:8030/kind
+curl -d "name=kind" -X POST http://18.216.74.180:8030/new
+mkdir -p $HOME/.kube
+touch $HOME/.kube/config
+curl  http://18.216.74.180:8030/kubeconfig/kind -o $HOME/.kube/config
 
-# Create a new Kubernetes cluster using KinD
-kind create cluster
+## File used for coverage reporting
+version=
+if [ -f s3.build-number/version ]; then
+  version=$(cat s3.build-number/version)
+fi
+export GOVER_FILE=gover-${version}-integration.coverprofile
 
-# Set KUBECONFIG environment variable
-export KUBECONFIG="$(kind get kubeconfig-path)"
-export USE_KIND="true"
+upload_debug_info() {
+  if ls /tmp/env_dumps/* &> /dev/null; then
+    TARBALL_NAME="env_dump-$(date +"%s").tar.gz"
+    echo "Env dumps will be uploaded as ${TARBALL_NAME}"
+    tar cfzv env_dumps/${TARBALL_NAME} -C /tmp/env_dumps/ .
+  fi
+}
 
-# Set CF-OPERATER Docker Image Tag
-export DOCKER_IMAGE_TAG="v0.4.2-0.g604925f0"
-# For PersistOutput container command
+## Make sure to cleanup the tunnel pod and service
+cleanup () {
+  upload_debug_info
 
-docker pull docker.io/cfcontainerization/cf-operator:v0.4.2-0.g604925f0
-kind load docker-image docker.io/cfcontainerization/cf-operator:v0.4.2-0.g604925f0
+  echo "Cleaning up"
+  set +e
+  kubectl get mutatingwebhookconfiguration -oname | \
+    grep "$TEST_NAMESPACE" | \
+    xargs -r -n 10 kubectl delete
+  kubectl get validatingwebhookconfiguration -oname | \
+    grep "$TEST_NAMESPACE" | \
+    xargs -r -n 10 kubectl delete
+  pidof ssh | xargs kill
+}
 
-# Download and install helm
-curl -LO https://git.io/get_helm.sh
-chmod 700 get_helm.sh
-./get_helm.sh
-# yes, heredocs are broken in before_script: https://travis-ci.community/t/multiline-commands-have-two-spaces-in-front-breaks-heredocs/2756
+trap cleanup EXIT
 
-kubectl create -f tiller.yml
-helm init --service-account tiller --wait
+## Set up SSH tunnels to make our webhook server available to k8s
+echo "Setting up SSH tunnel for webhook"
+cat <<EOF > /tmp/cf-operator-tunnel-identity
+$ssh_server_key
+EOF
+chmod 0600 /tmp/cf-operator-tunnel-identity
+
+# Random base port to support parallelism with different webhook servers
+export CF_OPERATOR_WEBHOOK_SERVICE_PORT=$(( ( RANDOM % 59000 )  + 4000 ))
+export CF_OPERATOR_WEBHOOK_SERVICE_HOST="$ssh_server_ip"
+export NODES=${NODES:-5}
+
+echo "Setting up webhooks and namespaces on k8s"
+for i in $(seq 1 "$NODES"); do
+  port=$(( CF_OPERATOR_WEBHOOK_SERVICE_PORT + i ))
+  namespace="${TEST_NAMESPACE}-${i}"
+  tunnel_name="tunnel-$port"
+  kubectl create namespace "$namespace"
+
+  # GatewayPorts option needs to be enabled on ssh server
+  ssh -fNT -i /tmp/cf-operator-tunnel-identity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -R "$ssh_server_ip:$port:localhost:$port" "$ssh_server_user@$ssh_server_ip"
+done
 
 echo "--------------------------------------------------------------------------------"
 echo "Running integration tests"
@@ -46,3 +85,12 @@ make -C src/code.cloudfoundry.org/cf-operator test-integration
 echo "--------------------------------------------------------------------------------"
 echo "Running integration storage tests"
 make -C src/code.cloudfoundry.org/cf-operator test-integration-storage
+
+find src/code.cloudfoundry.org/cf-operator/code-coverage -name "gover-*.coverprofile" -print0 | xargs -0 -r cp -t code-coverage/
+
+echo "--------------------------------------------------------------------------------"
+echo "Running e2e CLI tests"
+# fix relative SSL path in KUBECONFIG
+kube_path=$(dirname "$KUBECONFIG")
+sed -i 's@certificate-authority: \(.*\)$@certificate-authority: '$kube_path'/\1@' "$KUBECONFIG"
+make -C src/code.cloudfoundry.org/cf-operator test-cli-e2e
