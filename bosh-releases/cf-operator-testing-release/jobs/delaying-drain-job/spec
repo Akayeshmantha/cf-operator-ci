@@ -3,9 +3,14 @@ name: delaying-drain-job
 
 templates:
   bpm.erb.yml: config/bpm.yml
+  test.conf.erb: config/test.conf
   drain.sh: bin/drain/drain.sh
   run.sh: bin/run
 
 packages: []
 
 properties: {}
+
+consumes:
+- name: testlink
+  type: link
