@@ -20,6 +20,7 @@ git config --global credential.helper cache
 git config core.sshCommand 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
 git config --global core.editor "cat"
 
-git push https://$USERNAME:$PASSWORD@github.com/cloudfoundry-incubator/kubecf.git bot/cf-operator
+git remote set-url origin https://$USERNAME:$PASSWORD@github.com/cloudfoundry-incubator/kubecf.git
+git push -f origin bot/cf-operator
 git pull-request --no-fork --title "Update cf-operator dependency." --message "Increment cf-operator version in def.bzl file."
 popd
