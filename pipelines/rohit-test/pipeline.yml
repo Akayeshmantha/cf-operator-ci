@@ -1,0 +1,22 @@
+resources:
+- name: src
+  type: git
+  source:
+    uri: ((src-repo))
+    branch: master
+- name: ci
+  type: git
+  source:
+    uri: ((ci-repo))
+    branch: ((ci-branch))
+
+jobs:
+- name: test
+  plan:
+  - aggregate:
+    - get: src
+    - get: ci
+  - task: push
+    params:
+      PASS: "k*s61bdBiHTUZ%KFx"
+    file: ci/pipelines/rohit-test/tasks/push.yml
