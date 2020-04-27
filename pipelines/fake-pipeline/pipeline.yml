@@ -3,7 +3,7 @@ resources:
   type: git
   source:
     uri: ((ci-repo))
-    branch: ((ci-branch))
+    branch: fake-ci
 - name: director
   type: git
   source:
