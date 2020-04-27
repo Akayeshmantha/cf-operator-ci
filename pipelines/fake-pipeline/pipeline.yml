@@ -1,0 +1,21 @@
+resources:
+- name: ci
+  type: git
+  source:
+    uri: ((ci-repo))
+    branch: ((ci-branch))
+- name: director
+  type: git
+  source:
+    uri: git@github.com:cloudfoundry/quarks-private.git
+    branch: master
+    private_key: ((github.key))
+jobs:
+- name: clean-concourse-workers
+  plan:
+  - aggregate:
+    - get: director
+    - get: ci 
+      trigger: true
+  - task: clean-concourse-workers
+    file: ci/pipelines/tasks/clean-concourse-workers.yml

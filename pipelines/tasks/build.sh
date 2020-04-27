@@ -15,7 +15,7 @@ git describe --tags --long || git tag v0.0.0 # Make sure there's always a tag th
 popd
 
 # for backwards-compatibility
-ARTIFACT_VERSION=${ARTIFACT_VERSION:-$VERSION_TAG}
+# ARTIFACT_VERSION=${ARTIFACT_VERSION:-$VERSION_TAG}
 
 make -C src/code.cloudfoundry.org/cf-operator build
 cp src/code.cloudfoundry.org/cf-operator/binaries/cf-operator binaries/cf-operator-$ARTIFACT_VERSION
